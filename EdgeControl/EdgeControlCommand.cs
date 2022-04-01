@@ -40,10 +40,25 @@ namespace EdgeControl
             while (eraseAnswer.ToLower() != "n")
             {
                 RhinoGet.GetString("Would you like to erase selected meshes and highlight the lines? (Y/N)", true, ref eraseAnswer);
-                if (eraseAnswer.ToLower() == "y") objManipulator.EraseAndRedrawLines(go, doc, allVerticalLines);
+                if (eraseAnswer.ToLower() == "y")
+                {
+                    objManipulator.EraseAndRedrawLines(go, doc, allVerticalLines);
+                    break;
+                }
                 else if (eraseAnswer.ToLower() != "n") RhinoApp.WriteLine($"Invalid answer, please type either y (yes) or n (no)");
 
             }
+        }
+
+        private double PromptTolerance()
+        {
+            double toleranceAnswer = -1;
+            while (toleranceAnswer < 0 || toleranceAnswer > 90)
+            {
+                RhinoGet.GetNumber("How much vertical tolerance do you want in degrees (°) ? - Min: 0°, Max: 90°", true, ref toleranceAnswer);
+                if (toleranceAnswer < 0 || toleranceAnswer > 90) RhinoApp.WriteLine($"Invalid answer, please type in a tolerance within the limits");
+            }
+            return toleranceAnswer;
         }
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
@@ -54,6 +69,8 @@ namespace EdgeControl
 
             if (!objManipulator.ObjectRetrieval(go, ref bHavePreselectedObjects)) return Result.Cancel;
 
+            double tolerance = PromptTolerance();
+
             var objList = go.Objects();
             List<Mesh> meshList = new List<Mesh>();
             foreach (var obj in objList)
@@ -61,7 +78,7 @@ namespace EdgeControl
                 meshList.Add(obj.Mesh());
             }
 
-            var allVerticalLines = vertCalculator.CalculateVerticalMeshLineLength(meshList, 5);
+            var allVerticalLines = vertCalculator.CalculateVerticalMeshLineLength(meshList, tolerance);
 
             PromptErase(go, doc, allVerticalLines);
 
